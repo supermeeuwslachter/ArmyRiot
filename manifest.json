@@ -1,0 +1,16 @@
+{
+  "name": "Treasure Hunt",
+  "short_name": "Hunt",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f0e17",
+  "theme_color": "#1a1a2e",
+  "description": "A GPS-based treasure hunt app",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

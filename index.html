@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>Treasure Hunt</title>
+  <link rel="manifest" href="manifest.json" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
+
+  <style>
+    :root {
+      --bg:        #0f0e17;
+      --surface:   #1a1830;
+      --gold:      #d4a853;
+      --gold-dim:  #8a6830;
+      --parchment: #e8dfc0;
+      --red:       #c94040;
+      --green:     #4caf78;
+      --text:      #cfc9b8;
+      --radius:    12px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Crimson Pro', Georgia, serif;
+      font-size: 18px;
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* star field */
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      background-image:
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.6), transparent),
+        radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,.4), transparent),
+        radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,.5), transparent),
+        radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,.3), transparent),
+        radial-gradient(1px 1px at 65% 80%, rgba(255,255,255,.4), transparent),
+        radial-gradient(1px 1px at 40% 90%, rgba(255,255,255,.3), transparent),
+        radial-gradient(1.5px 1.5px at 90% 25%, rgba(255,255,255,.5), transparent),
+        radial-gradient(1px 1px at 35% 55%, rgba(255,255,255,.3), transparent);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    header {
+      position: relative; z-index: 1;
+      text-align: center;
+      padding: 28px 20px 16px;
+      border-bottom: 1px solid var(--gold-dim);
+    }
+
+    header h1 {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: clamp(1.2rem, 5vw, 1.8rem);
+      color: var(--gold);
+      letter-spacing: .05em;
+      text-shadow: 0 0 24px rgba(212,168,83,.4);
+    }
+
+    header p {
+      font-style: italic;
+      font-size: .9rem;
+      color: var(--gold-dim);
+      margin-top: 4px;
+    }
+
+    main {
+      position: relative; z-index: 1;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      padding: 20px 16px 32px;
+      max-width: 520px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    /* ── GPS status bar ── */
+    #gps-bar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--surface);
+      border: 1px solid var(--gold-dim);
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      font-size: .85rem;
+    }
+
+    #gps-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: var(--red);
+      flex-shrink: 0;
+      transition: background .4s;
+    }
+    #gps-dot.active { background: var(--green); box-shadow: 0 0 8px var(--green); }
+
+    /* ── Progress row ── */
+    #progress-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: .85rem;
+      color: var(--gold-dim);
+    }
+
+    #progress-bar-wrap {
+      flex: 1; height: 4px;
+      background: var(--surface);
+      border-radius: 2px;
+      margin: 0 12px;
+      overflow: hidden;
+    }
+
+    #progress-bar-fill {
+      height: 100%;
+      background: var(--gold);
+      border-radius: 2px;
+      transition: width .6s ease;
+    }
+
+    /* ── Clue card ── */
+    #clue-card {
+      background: var(--surface);
+      border: 1px solid var(--gold-dim);
+      border-radius: var(--radius);
+      padding: 22px 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #clue-card::before {
+      content: '✦';
+      position: absolute; top: 12px; right: 16px;
+      color: var(--gold-dim);
+      font-size: 1.1rem;
+      opacity: .5;
+    }
+
+    #clue-label {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: .65rem;
+      letter-spacing: .15em;
+      color: var(--gold-dim);
+      text-transform: uppercase;
+      margin-bottom: 10px;
+    }
+
+    #clue-title {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 1.05rem;
+      color: var(--gold);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+
+    #clue-text {
+      font-style: italic;
+      line-height: 1.65;
+      color: var(--parchment);
+      font-size: 1rem;
+    }
+
+    /* ── Distance card ── */
+    #distance-card {
+      background: var(--surface);
+      border: 1px solid var(--gold-dim);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #compass {
+      font-size: 2.2rem;
+      line-height: 1;
+      flex-shrink: 0;
+      transition: transform .5s ease;
+    }
+
+    #distance-info { flex: 1; }
+
+    #distance-value {
+      font-family: 'Cinzel Decorative', serif;
+      font-size: 1.5rem;
+      color: var(--gold);
+      line-height: 1;
+    }
+
+    #distance-label {
+      font-size: .8rem;
+      color: var(--gold-dim);
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    /* warm/cold indicator */
+    #warmth-bar {
+      height: 6px;
+      border-radius: 3px;
+      margin-top: 10px;
+      background: linear-gradient(to right, #4a90d9, #c94040);
+      position: relative;
+      overflow: hidden;
+    }
+    #warmth-indicator {
+      position: absolute;
+      top: -2px;
+      width: 10px; height: 10px;
+      border-radius: 50%;
+      background: white;
+      border: 2px solid var(--bg);
+      transform: translateX(-50%);
+      transition: left .8s ease;
+    }
+
+    /* ── Unlock overlay ── */
+    #unlock-panel {
+      display: none;
+      background: linear-gradient(135deg, #1e1b10, #2a2210);
+      border: 2px solid var(--gold);
+      border-radius: var(--radius);
+      padding: 28px 22px;
+      text-align: center;
+      animation: fadeIn .5s ease;
+    }
+
+    #unlock-panel.visible { display: block; }
+
+    #unlock-panel .trophy { font-size: 3rem; margin-bottom: 12px; }
+
+    #unlock-panel h2 {
+      font-family: 'Cinzel Decorative', serif;
+      color: var(--gold);
+      font-size: 1.1rem;
+      margin-bottom: 10px;
+    }
+
+    #unlock-panel p {
+      font-style: italic;
+      color: var(--parchment);
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+
+    #next-btn {
+      background: var(--gold);
+      color: var(--bg);
+      border: none;
+      border-radius: 8px;
+      padding: 12px 28px;
+      font-family: 'Cinzel Decorative', serif;
+      font-size: .85rem;
+      cursor: pointer;
+      letter-spacing: .05em;
+      transition: opacity .2s, transform .1s;
+    }
+    #next-btn:active { transform: scale(.97); opacity: .85; }
+
+    /* ── Final screen ── */
+    #final-screen {
+      display: none;
+      text-align: center;
+      padding: 30px 20px;
+      animation: fadeIn .6s ease;
+    }
+    #final-screen.visible { display: block; }
+    #final-screen .chest { font-size: 5rem; margin-bottom: 16px; }
+    #final-screen h2 {
+      font-family: 'Cinzel Decorative', serif;
+      color: var(--gold);
+      font-size: 1.3rem;
+      margin-bottom: 14px;
+    }
+    #final-screen p {
+      font-style: italic;
+      color: var(--parchment);
+      line-height: 1.7;
+    }
+
+    /* ── Debug panel (remove in production) ── */
+    #debug {
+      background: rgba(0,0,0,.5);
+      border: 1px dashed #444;
+      border-radius: 8px;
+      padding: 10px 14px;
+      font-size: .75rem;
+      color: #777;
+      font-family: monospace;
+      word-break: break-all;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 0 rgba(212,168,83,.4); }
+      50%       { box-shadow: 0 0 0 10px rgba(212,168,83,0); }
+    }
+
+    .pulse { animation: pulse 1.5s ease infinite; }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚔ Treasure Hunt ⚔</h1>
+  <p>Follow the clues — the treasure awaits</p>
+</header>
+
+<main>
+
+  <div id="gps-bar">
+    <div id="gps-dot"></div>
+    <span id="gps-status">Acquiring GPS signal…</span>
+  </div>
+
+  <div id="progress-row">
+    <span id="progress-text">Clue 1 of 4</span>
+    <div id="progress-bar-wrap"><div id="progress-bar-fill" style="width:0%"></div></div>
+    <span id="progress-pct">0%</span>
+  </div>
+
+  <!-- Active hunt view -->
+  <div id="hunt-view">
+
+    <div id="clue-card">
+      <div id="clue-label">Current Clue</div>
+      <div id="clue-title"></div>
+      <div id="clue-text"></div>
+    </div>
+
+    <div id="distance-card">
+      <div id="compass">🧭</div>
+      <div id="distance-info">
+        <div id="distance-value">— m</div>
+        <div id="distance-label">distance to next location</div>
+        <div id="warmth-bar"><div id="warmth-indicator" style="left:50%"></div></div>
+      </div>
+    </div>
+
+    <!-- shown when player arrives -->
+    <div id="unlock-panel">
+      <div class="trophy">🏆</div>
+      <h2 id="unlock-title">Location reached!</h2>
+      <p id="unlock-text"></p>
+      <button id="next-btn" onclick="nextClue()">Continue →</button>
+    </div>
+
+  </div>
+
+  <!-- shown at the end -->
+  <div id="final-screen">
+    <div class="chest">🎁</div>
+    <h2>You found the treasure!</h2>
+    <p id="final-text">Congratulations — you have completed the hunt.</p>
+  </div>
+
+  <!-- remove this block once everything works -->
+  <div id="debug">GPS: waiting…</div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  CONFIGURATION — edit this section to set up your hunt
+// ═══════════════════════════════════════════════════════
+
+const ARRIVAL_RADIUS_M = 20; // metres — how close counts as "arrived"
+
+const CLUES = [
+  {
+    title: "The Old Oak",
+    clue: "Where roots run deep and shadows gather at noon, seek the guardian of the northern path.",
+    // 📍 Replace with your real coordinates:
+    lat: 51.9956,
+    lon: 4.2117,
+    unlock_title: "You found the Old Oak!",
+    unlock_text: "Hidden beneath the mossy stone you discover a faded inscription… it points east, toward the water's edge.",
+  },
+  {
+    title: "The Water's Edge",
+    clue: "Follow the sound of flowing water until the bridge of three arches comes into view.",
+    lat: 51.9970,
+    lon: 4.2140,
+    unlock_title: "The bridge!",
+    unlock_text: "Scratched into the railing: 'When the clock strikes noon, face south.' Your next destination lies at the heart of the village.",
+  },
+  {
+    title: "Heart of the Village",
+    clue: "The village square holds a secret. Count the windows of the oldest building and face that direction.",
+    lat: 51.9940,
+    lon: 4.2090,
+    unlock_title: "Well done!",
+    unlock_text: "A loose cobblestone near the fountain conceals the next clue. It speaks of iron gates and forgotten gardens…",
+  },
+  {
+    title: "The Forgotten Garden",
+    clue: "Behind the iron gates, where roses once bloomed and time stands still — the treasure is buried where two paths cross.",
+    lat: 51.9960,
+    lon: 4.2060,
+    unlock_title: "You've arrived!",
+    unlock_text: "X marks the spot. Dig here — or perhaps look under the third stone from the left…",
+  },
+];
+
+const FINAL_MESSAGE = "You have followed every clue and solved every riddle. The treasure is yours — well earned, brave adventurer!";
+
+// ═══════════════════════════════════════════════════════
+//  APP LOGIC — no changes needed below this line
+// ═══════════════════════════════════════════════════════
+
+let currentClue = 0;
+let watchId = null;
+let lastDistance = null;
+
+function haversine(lat1, lon1, lat2, lon2) {
+  const R = 6371000;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLon = (lon2 - lon1) * Math.PI / 180;
+  const a = Math.sin(dLat/2)**2 +
+            Math.cos(lat1 * Math.PI/180) * Math.cos(lat2 * Math.PI/180) *
+            Math.sin(dLon/2)**2;
+  return R * 2 * Math.asin(Math.sqrt(a));
+}
+
+function renderClue() {
+  const c = CLUES[currentClue];
+  document.getElementById('clue-title').textContent = c.title;
+  document.getElementById('clue-text').textContent  = c.clue;
+  document.getElementById('unlock-panel').classList.remove('visible');
+  document.getElementById('distance-value').textContent = '— m';
+
+  const pct = Math.round((currentClue / CLUES.length) * 100);
+  document.getElementById('progress-text').textContent = `Clue ${currentClue + 1} of ${CLUES.length}`;
+  document.getElementById('progress-bar-fill').style.width = pct + '%';
+  document.getElementById('progress-pct').textContent = pct + '%';
+}
+
+function onPosition(pos) {
+  const { latitude: lat, longitude: lon, accuracy } = pos.coords;
+
+  document.getElementById('gps-dot').classList.add('active');
+  document.getElementById('gps-status').textContent = `GPS active · ±${Math.round(accuracy)} m`;
+  document.getElementById('debug').textContent =
+    `lat: ${lat.toFixed(6)}, lon: ${lon.toFixed(6)}, acc: ±${Math.round(accuracy)}m`;
+
+  if (currentClue >= CLUES.length) return;
+
+  const target = CLUES[currentClue];
+  const dist   = haversine(lat, lon, target.lat, target.lon);
+  lastDistance = dist;
+
+  document.getElementById('distance-value').textContent =
+    dist < 1000 ? `${Math.round(dist)} m` : `${(dist/1000).toFixed(1)} km`;
+
+  // warmth indicator: 0% = far (>500 m), 100% = very close (0 m)
+  const warmth = Math.max(0, Math.min(1, 1 - dist / 500));
+  document.getElementById('warmth-indicator').style.left = (warmth * 100) + '%';
+
+  // rotate compass emoji for fun
+  document.getElementById('compass').style.transform = `rotate(${(Date.now()/30) % 360}deg)`;
+
+  if (dist <= ARRIVAL_RADIUS_M) {
+    showUnlock();
+  }
+}
+
+function showUnlock() {
+  const c = CLUES[currentClue];
+  document.getElementById('unlock-title').textContent = c.unlock_title;
+  document.getElementById('unlock-text').textContent  = c.unlock_text;
+  const panel = document.getElementById('unlock-panel');
+  panel.classList.add('visible', 'pulse');
+  setTimeout(() => panel.classList.remove('pulse'), 3000);
+}
+
+function nextClue() {
+  currentClue++;
+  if (currentClue >= CLUES.length) {
+    document.getElementById('hunt-view').style.display   = 'none';
+    document.getElementById('final-screen').classList.add('visible');
+    document.getElementById('final-text').textContent = FINAL_MESSAGE;
+    document.getElementById('progress-bar-fill').style.width = '100%';
+    document.getElementById('progress-pct').textContent = '100%';
+    document.getElementById('progress-text').textContent = 'Complete!';
+  } else {
+    renderClue();
+  }
+}
+
+function onError(err) {
+  document.getElementById('gps-dot').classList.remove('active');
+  const msgs = {
+    1: 'Location access denied — please allow GPS in your browser settings.',
+    2: 'GPS signal unavailable. Try moving outdoors.',
+    3: 'GPS request timed out. Retrying…',
+  };
+  document.getElementById('gps-status').textContent = msgs[err.code] || 'GPS error.';
+}
+
+function startTracking() {
+  if (!navigator.geolocation) {
+    document.getElementById('gps-status').textContent = 'GPS not supported by this browser.';
+    return;
+  }
+  watchId = navigator.geolocation.watchPosition(onPosition, onError, {
+    enableHighAccuracy: true,
+    maximumAge: 5000,
+    timeout: 15000,
+  });
+}
+
+// Init
+renderClue();
+startTracking();
+</script>
+</body>
+</html>
