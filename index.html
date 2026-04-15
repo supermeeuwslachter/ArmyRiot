@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#0f2338" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
-  <title>Treasure Hunt</title>
+  <title>ArmyRiot | Location Hunt</title>
   <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icon.svg" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700&family=Crimson+Pro:ital,wght@0,300;0,400;1,300&display=swap" rel="stylesheet" />
 
@@ -131,10 +131,12 @@
       background: var(--gold);
       border-radius: 2px;
       transition: width .6s ease;
+      width: 0%;
     }
 
     /* ── Clue card ── */
     #clue-card {
+      display: none;
       background: var(--surface);
       border: 1px solid var(--gold-dim);
       border-radius: var(--radius);
@@ -227,6 +229,7 @@
       border: 2px solid var(--bg);
       transform: translateX(-50%);
       transition: left .8s ease;
+      left: 50%;
     }
 
     /* ── Unlock overlay ── */
@@ -322,7 +325,7 @@
 
 <header>
   <h1>⚔ Treasure ⚔</h1>
-  <p>Follow the clues — the treasure awaits</p>
+  <p>Reach each location to unlock its challenge</p>
 </header>
 
 <main>
@@ -333,26 +336,20 @@
   </div>
 
   <div id="progress-row">
-    <span id="progress-text">Clue 1 of 4</span>
-    <div id="progress-bar-wrap"><div id="progress-bar-fill" style="width:0%"></div></div>
+    <span id="progress-text">Location 1 of 3</span>
+    <div id="progress-bar-wrap"><div id="progress-bar-fill"></div></div>
     <span id="progress-pct">0%</span>
   </div>
 
   <!-- Active hunt view -->
   <div id="hunt-view">
 
-    <div id="clue-card">
-      <div id="clue-label">Current Clue</div>
-      <div id="clue-title"></div>
-      <div id="clue-text"></div>
-    </div>
-
     <div id="distance-card">
       <div id="compass">🧭</div>
       <div id="distance-info">
         <div id="distance-value">— m</div>
-        <div id="distance-label">distance to next location</div>
-        <div id="warmth-bar"><div id="warmth-indicator" style="left:50%"></div></div>
+        <div id="distance-label">distance to exact location</div>
+        <div id="warmth-bar"><div id="warmth-indicator"></div></div>
       </div>
     </div>
 
@@ -361,7 +358,7 @@
       <div class="trophy">🏆</div>
       <h2 id="unlock-title">Location reached!</h2>
       <p id="unlock-text"></p>
-      <button id="next-btn" onclick="nextClue()">Continue →</button>
+      <button id="next-btn" onclick="openChallengeNow()">Open challenge →</button>
     </div>
 
   </div>
@@ -384,52 +381,61 @@
 // ═══════════════════════════════════════════════════════
 
 const ARRIVAL_RADIUS_M = 20; // metres — how close counts as "arrived"
+const PROGRESS_KEY = "armyriot:location-progress";
 
-const CLUES = [
+const LOCATIONS = [
   {
     title: "The Old Oak",
     clue: "Where roots run deep and shadows gather at noon, seek the guardian of the northern path.",
-    // 📍 Replace with your real coordinates:
-    lat: 51.9956,
-    lon: 4.2117,
-    unlock_title: "You found the Old Oak!",
-    unlock_text: "Hidden beneath the mossy stone you discover a faded inscription… it points east, toward the water's edge.",
+    lat: 51.754396,
+    lon: -1.255471,
+    page: "location-1.html",
+    unlock_title: "The Old Oak is reached",
+    unlock_text: "The challenge page is opening now. Solve the question there to move on.",
   },
   {
     title: "The Water's Edge",
     clue: "Follow the sound of flowing water until the bridge of three arches comes into view.",
-    lat: 51.9970,
-    lon: 4.2140,
-    unlock_title: "The bridge!",
-    unlock_text: "Scratched into the railing: 'When the clock strikes noon, face south.' Your next destination lies at the heart of the village.",
+    lat: 51.752592,
+    lon: -1.253930,
+    page: "location-2.html",
+    unlock_title: "The Water's Edge is reached",
+    unlock_text: "The challenge page is opening now. Solve the question there to move on.",
   },
   {
     title: "Heart of the Village",
     clue: "The village square holds a secret. Count the windows of the oldest building and face that direction.",
-    lat: 51.9940,
-    lon: 4.2090,
-    unlock_title: "Well done!",
-    unlock_text: "A loose cobblestone near the fountain conceals the next clue. It speaks of iron gates and forgotten gardens…",
-  },
-  {
-    title: "The Forgotten Garden",
-    clue: "Behind the iron gates, where roses once bloomed and time stands still — the treasure is buried where two paths cross.",
-    lat: 51.9960,
-    lon: 4.2060,
-    unlock_title: "You've arrived!",
-    unlock_text: "X marks the spot. Dig here — or perhaps look under the third stone from the left…",
+    lat: 51.759646,
+    lon: -1.250528,
+    page: "location-3.html",
+    unlock_title: "The final location is reached",
+    unlock_text: "The last challenge page is opening now. Finish the question there to complete the hunt.",
   },
 ];
 
-const FINAL_MESSAGE = "You have followed every clue and solved every riddle. The treasure is yours — well earned, brave adventurer!";
+const FINAL_MESSAGE = "You have reached all three locations and solved every challenge. The casefile is complete.";
 
 // ═══════════════════════════════════════════════════════
 //  APP LOGIC — no changes needed below this line
 // ═══════════════════════════════════════════════════════
 
-let currentClue = 0;
+let currentLocation = 0;
 let watchId = null;
 let lastDistance = null;
+let redirectTimer = null;
+
+function readProgress() {
+  const raw = Number.parseInt(localStorage.getItem(PROGRESS_KEY) || "0", 10);
+  if (!Number.isFinite(raw) || raw < 0) {
+    return 0;
+  }
+
+  return Math.min(raw, LOCATIONS.length);
+}
+
+function writeProgress(value) {
+  localStorage.setItem(PROGRESS_KEY, String(value));
+}
 
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371000;
@@ -441,17 +447,39 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.asin(Math.sqrt(a));
 }
 
-function renderClue() {
-  const c = CLUES[currentClue];
-  document.getElementById('clue-title').textContent = c.title;
-  document.getElementById('clue-text').textContent  = c.clue;
+function renderLocation() {
   document.getElementById('unlock-panel').classList.remove('visible');
+  document.getElementById('unlock-text').textContent = '';
+  document.getElementById('unlock-title').textContent = 'Location reached!';
   document.getElementById('distance-value').textContent = '— m';
 
-  const pct = Math.round((currentClue / CLUES.length) * 100);
-  document.getElementById('progress-text').textContent = `Clue ${currentClue + 1} of ${CLUES.length}`;
+  const pct = Math.round((currentLocation / LOCATIONS.length) * 100);
+  document.getElementById('progress-text').textContent = `Location ${currentLocation + 1} of ${LOCATIONS.length}`;
   document.getElementById('progress-bar-fill').style.width = pct + '%';
   document.getElementById('progress-pct').textContent = pct + '%';
+}
+
+function showCompleteScreen() {
+  document.getElementById('hunt-view').style.display = 'none';
+  document.getElementById('final-screen').classList.add('visible');
+  document.getElementById('final-text').textContent = FINAL_MESSAGE;
+  document.getElementById('progress-bar-fill').style.width = '100%';
+  document.getElementById('progress-pct').textContent = '100%';
+  document.getElementById('progress-text').textContent = 'Complete!';
+}
+
+function openChallengeNow() {
+  const target = LOCATIONS[currentLocation];
+  if (!target) {
+    return;
+  }
+
+  if (redirectTimer) {
+    clearTimeout(redirectTimer);
+    redirectTimer = null;
+  }
+
+  window.location.href = target.page;
 }
 
 function onPosition(pos) {
@@ -462,9 +490,9 @@ function onPosition(pos) {
   document.getElementById('debug').textContent =
     `lat: ${lat.toFixed(6)}, lon: ${lon.toFixed(6)}, acc: ±${Math.round(accuracy)}m`;
 
-  if (currentClue >= CLUES.length) return;
+  if (currentLocation >= LOCATIONS.length) return;
 
-  const target = CLUES[currentClue];
+  const target = LOCATIONS[currentLocation];
   const dist   = haversine(lat, lon, target.lat, target.lon);
   lastDistance = dist;
 
@@ -479,31 +507,27 @@ function onPosition(pos) {
   document.getElementById('compass').style.transform = `rotate(${(Date.now()/30) % 360}deg)`;
 
   if (dist <= ARRIVAL_RADIUS_M) {
+    writeProgress(currentLocation + 1);
     showUnlock();
   }
 }
 
 function showUnlock() {
-  const c = CLUES[currentClue];
+  const c = LOCATIONS[currentLocation];
   document.getElementById('unlock-title').textContent = c.unlock_title;
   document.getElementById('unlock-text').textContent  = c.unlock_text;
   const panel = document.getElementById('unlock-panel');
   panel.classList.add('visible', 'pulse');
   setTimeout(() => panel.classList.remove('pulse'), 3000);
-}
 
-function nextClue() {
-  currentClue++;
-  if (currentClue >= CLUES.length) {
-    document.getElementById('hunt-view').style.display   = 'none';
-    document.getElementById('final-screen').classList.add('visible');
-    document.getElementById('final-text').textContent = FINAL_MESSAGE;
-    document.getElementById('progress-bar-fill').style.width = '100%';
-    document.getElementById('progress-pct').textContent = '100%';
-    document.getElementById('progress-text').textContent = 'Complete!';
-  } else {
-    renderClue();
+  if (redirectTimer) {
+    return;
   }
+
+  redirectTimer = setTimeout(() => {
+    redirectTimer = null;
+    window.location.href = c.page;
+  }, 1100);
 }
 
 function onError(err) {
@@ -529,8 +553,13 @@ function startTracking() {
 }
 
 // Init
-renderClue();
-startTracking();
+currentLocation = readProgress();
+if (currentLocation >= LOCATIONS.length) {
+  showCompleteScreen();
+} else {
+  renderLocation();
+  startTracking();
+}
 </script>
 </body>
 </html>
