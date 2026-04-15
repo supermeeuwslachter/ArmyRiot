@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <meta name="theme-color" content="#1a1a2e" />
+  <meta name="theme-color" content="#0f2338" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="mobile-web-app-capable" content="yes" />
   <title>Treasure Hunt</title>
@@ -13,14 +13,14 @@
 
   <style>
     :root {
-      --bg:        #0f0e17;
-      --surface:   #1a1830;
-      --gold:      #d4a853;
-      --gold-dim:  #8a6830;
-      --parchment: #e8dfc0;
+      --bg:        #0f2338;
+      --surface:   #f4efe1;
+      --gold:      #8c6a2f;
+      --gold-dim:  #5d4721;
+      --parchment: #1f1a17;
       --red:       #c94040;
       --green:     #4caf78;
-      --text:      #cfc9b8;
+      --text:      #1f1a17;
       --radius:    12px;
     }
 
@@ -37,19 +37,19 @@
       overflow-x: hidden;
     }
 
-    /* star field */
+    /* subtle paper-dust field */
     body::before {
       content: '';
       position: fixed; inset: 0;
       background-image:
-        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.6), transparent),
-        radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,.4), transparent),
-        radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,.5), transparent),
-        radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,.3), transparent),
-        radial-gradient(1px 1px at 65% 80%, rgba(255,255,255,.4), transparent),
-        radial-gradient(1px 1px at 40% 90%, rgba(255,255,255,.3), transparent),
-        radial-gradient(1.5px 1.5px at 90% 25%, rgba(255,255,255,.5), transparent),
-        radial-gradient(1px 1px at 35% 55%, rgba(255,255,255,.3), transparent);
+        radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,.18), transparent),
+        radial-gradient(1px 1px at 55% 15%, rgba(255,255,255,.15), transparent),
+        radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,.14), transparent),
+        radial-gradient(1px 1px at 10% 70%, rgba(255,255,255,.12), transparent),
+        radial-gradient(1px 1px at 65% 80%, rgba(255,255,255,.12), transparent),
+        radial-gradient(1px 1px at 40% 90%, rgba(255,255,255,.1), transparent),
+        radial-gradient(1.5px 1.5px at 90% 25%, rgba(255,255,255,.14), transparent),
+        radial-gradient(1px 1px at 35% 55%, rgba(255,255,255,.1), transparent);
       pointer-events: none;
       z-index: 0;
     }
@@ -232,7 +232,7 @@
     /* ── Unlock overlay ── */
     #unlock-panel {
       display: none;
-      background: linear-gradient(135deg, #1e1b10, #2a2210);
+      background: var(--surface);
       border: 2px solid var(--gold);
       border-radius: var(--radius);
       padding: 28px 22px;
@@ -260,7 +260,7 @@
 
     #next-btn {
       background: var(--gold);
-      color: var(--bg);
+      color: #f4efe1;
       border: none;
       border-radius: 8px;
       padding: 12px 28px;
@@ -321,7 +321,7 @@
 <body>
 
 <header>
-  <h1>⚔ Treasure Hunt ⚔</h1>
+  <h1>⚔ Treasure ⚔</h1>
   <p>Follow the clues — the treasure awaits</p>
 </header>
 
