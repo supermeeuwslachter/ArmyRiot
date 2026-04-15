@@ -484,8 +484,7 @@ function onPosition(pos) {
 
   document.getElementById('gps-dot').classList.add('active');
   document.getElementById('gps-status').textContent = `GPS active · ±${Math.round(accuracy)} m`;
-  document.getElementById('debug').textContent =
-    `lat: ${lat.toFixed(6)}, lon: ${lon.toFixed(6)}, acc: ±${Math.round(accuracy)}m`;
+  document.getElementById('debug').textContent = `GPS accuracy: ±${Math.round(accuracy)}m`;
 
   if (currentLocation >= LOCATIONS.length) return;
 
@@ -493,8 +492,7 @@ function onPosition(pos) {
   const dist   = haversine(lat, lon, target.lat, target.lon);
   lastDistance = dist;
 
-  document.getElementById('distance-value').textContent =
-    dist < 1000 ? `${Math.round(dist)} m` : `${(dist/1000).toFixed(1)} km`;
+  document.getElementById('distance-value').textContent = `${Math.round(dist)} m`;
 
   // warmth indicator: 0% = far (>500 m), 100% = very close (0 m)
   const warmth = Math.max(0, Math.min(1, 1 - dist / 500));
