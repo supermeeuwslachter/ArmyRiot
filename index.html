@@ -341,7 +341,7 @@
     <span id="progress-pct">0%</span>
   </div>
 
-  <!-- Active hunt view -->
+  <!-- Active location view -->
   <div id="hunt-view">
 
     <div id="distance-card">
@@ -386,7 +386,6 @@ const PROGRESS_KEY = "armyriot:location-progress";
 const LOCATIONS = [
   {
     title: "The Old Oak",
-    clue: "Where roots run deep and shadows gather at noon, seek the guardian of the northern path.",
     lat: 51.754396,
     lon: -1.255471,
     page: "location-1.html",
@@ -395,7 +394,6 @@ const LOCATIONS = [
   },
   {
     title: "The Water's Edge",
-    clue: "Follow the sound of flowing water until the bridge of three arches comes into view.",
     lat: 51.752592,
     lon: -1.253930,
     page: "location-2.html",
@@ -404,7 +402,6 @@ const LOCATIONS = [
   },
   {
     title: "Heart of the Village",
-    clue: "The village square holds a secret. Count the windows of the oldest building and face that direction.",
     lat: 51.759646,
     lon: -1.250528,
     page: "location-3.html",
@@ -416,7 +413,7 @@ const LOCATIONS = [
 const FINAL_MESSAGE = "You have reached all three locations and solved every challenge. The casefile is complete.";
 
 // ═══════════════════════════════════════════════════════
-//  APP LOGIC — no changes needed below this line
+//  APP LOGIC
 // ═══════════════════════════════════════════════════════
 
 let currentLocation = 0;
